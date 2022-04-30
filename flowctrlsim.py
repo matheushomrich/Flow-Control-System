@@ -49,11 +49,12 @@ def saw(num_frames, lost_pkts):
             frame = not frame
             i+=1
     else:
-        transmission = ["x"] * ((num_frames + len(lost_pkts)) * 2)
+        transmission = ["x"] * (((num_frames + len(lost_pkts)) * 2) + 1)
         x = 1
+        errs = 1
         while x != len(transmission):
             if (x%2!=0): #A -->> B
-                if str(x) in lost_pkts:
+                if str(errs) in lost_pkts:
                     transmission[x] = "error"
                 else:
                     if(x != 0):
@@ -63,15 +64,18 @@ def saw(num_frames, lost_pkts):
                             transmission[x] = "ok"
                     else:
                             transmission[x] = "ok"
+                errs +=1
                     
             else: #B -->> A
                 
-                if str(x) in lost_pkts:
+                if str(errs) in lost_pkts:
                     transmission[x] = "error"
+                    errs +=1
                 elif transmission[x-1] == "error":
                     transmission[x] = "timeout"
                 else:
                     transmission[x] = "ok"
+                    errs +=1
             x+=1
         printAuxSaw(transmission)
 
@@ -83,30 +87,33 @@ def printAuxSaw(transmission):
     #print(transmission)
     while x != len(transmission):
         if(x%2!=0): #A -->> B
+            #print(transmission[x])
             if transmission[x]=="ok": 
                 if frame: print("A ->> B : ("+str(n)+") Frame 1")
                 else: print("A ->> B : ("+str(n)+") Frame 0")
-                frame = not frame
+                #frame = not frame
             elif transmission[x] == "error":
                 if frame: print("A -x B : ("+str(n)+") Frame 1")
                 else: print("A -x B : ("+str(n)+") Frame 0")
             elif transmission[x] == "retry":
                 if frame: print("A ->> B : ("+str(n)+") Frame 1 (RET)")
                 else: print("A ->> B : ("+str(n)+") Frame 0 (RET)")
-                frame = not frame
-                n+=1
+                #frame = not frame
+                #n+=1
 
         else:   #B -->> A
+            #print(transmission[x])
             if transmission[x]=="ok":
-                if frame:
+                if not frame:
                     print("B -->> A : Ack 1")
                 else:
                     print("B -->> A : Ack 0")
+                frame = not frame
                 n+=1
             elif transmission[x]=="timeout":
                 print("Note over A : TIMEOUT ("+str(n)+")")
             elif transmission[x]=="error":
-                if frame:
+                if not frame:
                     print("B --x A : Ack 1")
                     print("Note over A : TIMEOUT ("+str(n)+")")
                 else:
