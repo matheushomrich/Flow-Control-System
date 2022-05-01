@@ -102,107 +102,159 @@ def printAuxSaw(transmission):
 # Go-Back N
 def gbn(seqbits, num_frames, lost_pkts):
     window = (2 ** seqbits) - 1
-    transmission = ["x"] * ((num_frames) * 3)
-    #winPos = 0
-    x = 1
-    n = 1
-    frame = 0
-    ackN = 1
-    errorFlag = False
-    #errors = ["x"] * 
-    if lost_pkts[0] == "0":
-        while x < num_frames:
-            winPos = 0
-            while winPos < window:
-                if n > num_frames:
-                    window = winPos
-                    break
-                print("A ->> B : ("+str(n)+") Frame "+str(frame))
-                winPos += 1
-                x += 1
-                n += 1
-                frame += 1
-                if frame > window: frame = 0
-            winPos = 0
-            while winPos < window:
-                print("B -->> A : Ack "+str(ackN))
-                winPos += 1
-                #x += 1
-                ackN += 1
-                if ackN > window: ackN = 0
-
-
-    else:
-        gbn_sender(window, lost_pkts, num_frames, ["x"], ["x"], n, 0, 1, True)
-
-
-
-
-
-        
-            
-def gbn_sender(window, lost_pkts, num_frames, frames, win,  n, w, c, s):
     
+    i = 0
+    b = 0
+    frameWindow = [0] * (num_frames + 1)
+    while i < len(frameWindow):
+        frameWindow[i] = b
+        b += 1
+        if b > window: b = 0
+        i += 1
+    gbn_sender(frameWindow, 0, window, 1, num_frames, 0, lost_pkts, 1, False, 0, 0)
+
+
+
+
+def gbn_sender(frameWindow, startW, endW, n, num_frames, rW, lost_pkts, c, sendRet, startRetW, endRetW):
     if n <= num_frames:
-        if s:
-            frames = [str(window)] * (window + 1)
-            win = ["0"] * window
-            i = 0
-            while i < window:
-                frames[i] = str(i)
-                if window > (num_frames - n): win[i] = str(i)
-                i += 1
-        else:
-            for i in win:
-                if int(win[len(win)-1]) == len(frames):
-                    next = "0"
+        if sendRet: i = startRetW
+        i = startW
+        errFlag = False
+        while i != endW:
+            #print(startW)
+            if sendRet:
+                if errFlag:
+                
+                    if str(c) in lost_pkts:
+                        print("A -x B : ("+str(n+count)+") Frame "+str(frameWindow[i])+" (RET)")
+                    else:
+                        print("A ->> B : ("+str(n+count)+") Frame "+str(frameWindow[i])+" (RET)")
+                    count += 1
                 else:
-                    next = str(int(win[len(win)-1]) + 1)
-                if i == "ok":
-                    i = next
-                else:
-                    i = i+" ret"
-        
-        i = 0
-        while i < len(win):
-            msg = win[i].split(" ")
-            if str(c) in lost_pkts:
-                print("A -x B : ("+str(n)+") Frame "+win[i])
-                win[i] = "error "+str(n)
-            elif len(msg) > 1:
-                if msg[1] == "ret":
-                    print("A ->> B : ("+str(n)+") Frame "+win[i])
+                    if str(c) in lost_pkts:
+                        print("A -x B : ("+str(n)+") Frame "+str(frameWindow[i])+" (RET)")
+                        errFlag = True
+                        count = 1
+                    else:
+                        print("A ->> B : ("+str(n)+") Frame "+str(frameWindow[i])+" (RET)")
+                        n += 1
+                if i == endRetW: break
             else:
-                print("A ->> B : ("+str(n)+") Frame "+win[i])
-            n += 1
+                if errFlag:
+                    
+                    if str(c) in lost_pkts:
+                        print("A -x B : ("+str(n+count)+") Frame "+str(frameWindow[i]))
+                    else:
+                        print("A ->> B : ("+str(n+count)+") Frame "+str(frameWindow[i]))
+                    count += 1
+                else:
+                    if str(c) in lost_pkts:
+                        print("A -x B : ("+str(n)+") Frame "+str(frameWindow[i]))
+                        errFlag = True
+                        count = 1
+                    else:
+                        print("A ->> B : ("+str(n)+") Frame "+str(frameWindow[i]))
+                        n += 1
             i += 1
             c += 1
-        gbn_receiver(window, frames, num_frames, n, win, lost_pkts, w, c)
+        
+        gbn_receiver(frameWindow, rW, startW, endW, n, num_frames, lost_pkts, c)
+
+        
+def gbn_receiver(frameWindow, rW, startW, endW, n, num_frames, lost_pkts, c):
+    i = startW
+    count = 0
+    wind = (endW - startW)
+    sendRet = False
+    startRetW = 0
+    endRetW = 0
+
+    while i != endW:
+        if str(c - wind) in lost_pkts:
+            print("Note over A : TIMEOUT ("+str(n)+")")
+            sendRet = True
+            startRetW = c - wind
+            endRetW = endW
+            break
+        
+        elif i == rW:
+            rW += 1
+            if str(c) in lost_pkts:
+                print("B --x A : Ack "+str(frameWindow[rW]))
+            else:
+                print("B -->> A : Ack "+str(frameWindow[rW]))
+            startW+=1
+            count += 1
+            c += 1
+        i += 1
+    endW += count
+    gbn_sender(frameWindow, startW, endW, n, num_frames, rW, lost_pkts, c, sendRet, startRetW, endRetW)
+
+
+
+# def gbn_sender(window, lost_pkts, num_frames, frames, win,  n, w, c, s):
+    
+#     if n <= num_frames:
+#         if s:
+#             frames = [str(window)] * (window + 1)
+#             win = ["0"] * window
+#             i = 0
+#             while i < window:
+#                 frames[i] = str(i)
+#                 if window > (num_frames - n): win[i] = str(i)
+#                 i += 1
+#         else:
+#             for i in win:
+#                 if int(win[len(win)-1]) == len(frames):
+#                     next = "0"
+#                 else:
+#                     next = str(int(win[len(win)-1]) + 1)
+#                 if i == "ok":
+#                     i = next
+#                 else:
+#                     i = i+" ret"
+        
+#         i = 0
+#         while i < len(win):
+#             msg = win[i].split(" ")
+#             if str(c) in lost_pkts:
+#                 print("A -x B : ("+str(n)+") Frame "+win[i])
+#                 win[i] = "error "+str(n)
+#             elif len(msg) > 1:
+#                 if msg[1] == "ret":
+#                     print("A ->> B : ("+str(n)+") Frame "+win[i])
+#             else:
+#                 print("A ->> B : ("+str(n)+") Frame "+win[i])
+#             n += 1
+#             i += 1
+#             c += 1
+#         gbn_receiver(window, frames, num_frames, n, win, lost_pkts, w, c)
             
 
 
-def gbn_receiver(window, frames, num_frames, n, win, lost_pkts, w, c):
-    for i in win:
-        if str(c) in lost_pkts:
-            print("B --x A : Ack "+str(w))
-        else:
-            print(i)
-            print(w)
-            msg = i.split(" ")
-            if msg[0] == "error":
-                if str(w) not in frames:
-                    print("Note over A : TIMEOUT ("+str(0)+")")
-                else:
-                    print("Note over A : TIMEOUT ("+str(w+1)+")")
-                break
+# def gbn_receiver(window, frames, num_frames, n, win, lost_pkts, w, c):
+#     for i in win:
+#         if str(c) in lost_pkts:
+#             print("B --x A : Ack "+str(w))
+#         else:
+#             print(i)
+#             print(w)
+#             msg = i.split(" ")
+#             if msg[0] == "error":
+#                 if str(w) not in frames:
+#                     print("Note over A : TIMEOUT ("+str(0)+")")
+#                 else:
+#                     print("Note over A : TIMEOUT ("+str(w+1)+")")
+#                 break
             
-            elif (int(i) == w):
-                w += 1
-                if str(w) not in frames: w = 0
-                print("B -->> A : Ack "+str(w))
-                i = "ok"
-        c += 1
-    gbn_sender(window, lost_pkts, num_frames, frames, win, n, w, c, False)
+#             elif (int(i) == w):
+#                 w += 1
+#                 if str(w) not in frames: w = 0
+#                 print("B -->> A : Ack "+str(w))
+#                 i = "ok"
+#         c += 1
+#     gbn_sender(window, lost_pkts, num_frames, frames, win, n, w, c, False)
 
 
 
