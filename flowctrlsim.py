@@ -1,6 +1,7 @@
 #T1 da disciplina de Introdução à Redes de Computadores
 #Feito pela dupla Matheus Homrich e Thiago Mello
 
+from enum import Flag
 import sys
 
 
@@ -100,8 +101,101 @@ def printAuxSaw(transmission):
 
 # Go-Back N
 def gbn(seqbits, num_frames, lost_pkts):
-    
-    print()
+    window = (2 ** seqbits) - 1
+    transmission = ["x"] * ((num_frames) * 3)
+    #winPos = 0
+    x = 1
+    n = 1
+    frame = 0
+    ackN = 1
+    errorFlag = False
+    #errors = ["x"] * 
+    if lost_pkts[0] == "0":
+        while x < num_frames:
+            winPos = 0
+            while winPos < window:
+                if n > num_frames:
+                    window = winPos
+                    break
+                print("A ->> B : ("+str(n)+") Frame "+str(frame))
+                winPos += 1
+                x += 1
+                n += 1
+                frame += 1
+                if frame > window: frame = 0
+            winPos = 0
+            while winPos < window:
+                print("B -->> A : Ack "+str(ackN))
+                winPos += 1
+                #x += 1
+                ackN += 1
+                if ackN > window: ackN = 0
+
+
+    else:
+        count = 1
+        windRecept = 0
+        while x < num_frames:
+            winPos = 0
+
+            while winPos < window:
+                if transmission[x] == "x":
+                    if str(x) in lost_pkts:
+                        transmission[x] = "error"
+                        
+                    else:
+                        transmission[x] = "ok"
+                        if windRecept == frame:
+                            transmission[x+3] = "ack "+str(n)
+                        winPos += 1
+                        n += 1
+                        frame += 1
+                        if frame > window: frame = 0
+                        if windRecept > window: windRecept = 0
+                
+                x += 1
+    print(transmission)
+
+
+            # winPos = 0
+
+            # while winPos < window:
+            #     if n > num_frames:
+            #         window = winPos
+            #         break
+            #     if (str(count) in lost_pkts):
+            #         print("A -x B : ("+str(n)+") Frame "+str(frame))
+            #         #..................
+
+            #         winPos += 1
+            #         x += 1
+            #         n += 1
+            #         frame += 1
+            #         if frame > window: frame = 0
+            #     else:
+            #         print("A ->> B : ("+str(n)+") Frame "+str(frame))
+            #         winPos += 1
+            #         x += 1
+            #         n += 1
+            #         frame += 1
+            #         if frame > window: frame = 0
+            #     count += 1
+            # winPos = 0
+            # while winPos < window:
+            #     print("B -->> A : Ack "+str(ackN))
+            #     winPos += 1
+            #     #x += 1
+            #     ackN += 1
+            #     if ackN > window: ackN = 0
+            #     count += 1
+
+
+
+
+        
+            
+
+
 
 
 # Selective Repeat ARQ
